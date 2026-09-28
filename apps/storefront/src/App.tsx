@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import AdminPage from './AdminPage'
 import AboutPage from './AboutPage'
 import CatalogPage from './CatalogPage'
+import NotFoundPage from './NotFoundPage'
 import { ArrowIcon, SiteFooter, SiteHeader } from './components/SiteChrome'
 
 const products = [
@@ -73,7 +74,7 @@ function HomePage() {
             </p>
             <div className="hero__actions">
               <a className="button button--primary" href="/catalog">Открыть каталог <ArrowIcon /></a>
-              <button className="text-link" type="button">Узнать о мастерской <span>→</span></button>
+              <a className="text-link" href="/about">Узнать о мастерской <span>→</span></a>
             </div>
           </div>
           <div className="hero__note">
@@ -101,6 +102,7 @@ function HomePage() {
               <article className={`product-card product-card--${index + 1}`} key={product.name}>
                 <div className="product-card__media">
                   <img src={product.image} alt={product.name} loading="lazy" />
+                  <img className="product-card__detail" src={product.image} alt="" loading="lazy" />
                   <span className="product-card__tag">{product.tag}</span>
                   <button className="circle-button" type="button" aria-label={`Посмотреть ${product.name}`}><ArrowIcon /></button>
                 </div>
@@ -177,6 +179,55 @@ function HomePage() {
 
 function App() {
   useEffect(() => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const revealTargets = Array.from(document.querySelectorAll<HTMLElement>('.site-shell main > section:not(.hero):not(.about-hero):not(.catalog-hero)'))
+
+    if (reducedMotion) return
+
+    revealTargets.forEach((element) => element.classList.add('motion-reveal'))
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return
+        entry.target.classList.add('is-visible')
+        observer.unobserve(entry.target)
+      })
+    }, { rootMargin: '0px 0px -8%', threshold: 0.12 })
+
+    revealTargets.forEach((element) => observer.observe(element))
+
+    const parallaxTargets = Array.from(document.querySelectorAll<HTMLElement>('.final-cta__ornament, .catalog-hero__ornament, .craft__stamp'))
+    parallaxTargets.forEach((element) => element.classList.add('motion-parallax'))
+
+    let animationFrame = 0
+    const updateParallax = () => {
+      parallaxTargets.forEach((element) => {
+        const rect = element.getBoundingClientRect()
+        if (rect.bottom < -100 || rect.top > window.innerHeight + 100) return
+
+        const distance = window.innerHeight / 2 - (rect.top + rect.height / 2)
+        const offset = Math.max(-42, Math.min(42, distance * 0.045))
+        element.style.setProperty('--parallax-y', `${offset}px`)
+      })
+      animationFrame = 0
+    }
+
+    const handleScroll = () => {
+      if (animationFrame) return
+      animationFrame = window.requestAnimationFrame(updateParallax)
+    }
+
+    updateParallax()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('scroll', handleScroll)
+      if (animationFrame) window.cancelAnimationFrame(animationFrame)
+    }
+  }, [])
+
+  useEffect(() => {
     const handleInternalNavigation = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
       if (!(event.target instanceof Element)) return
@@ -203,21 +254,23 @@ function App() {
     return () => document.removeEventListener('click', handleInternalNavigation)
   }, [])
 
-  const path = window.location.pathname.replace(/\/+$/, '')
+  const path = window.location.pathname.replace(/\/+$/, '') || '/'
   let page
 
-  if (path === '/admin') {
-    document.title = 'Панель управления — Fable Fox'
-    page = <AdminPage />
+  if (path === '/admin' || path.startsWith('/admin/')) {
+    page = <AdminPage path={path} />
   } else if (path === '/about') {
     document.title = 'О мастерской — Fable Fox'
     page = <AboutPage />
   } else if (path === '/catalog') {
     document.title = 'Каталог — Fable Fox'
     page = <CatalogPage />
-  } else {
+  } else if (path === '/') {
     document.title = 'Fable Fox — миниатюры с характером'
     page = <HomePage />
+  } else {
+    document.title = 'Страница не найдена — Fable Fox'
+    page = <NotFoundPage />
   }
 
   return (

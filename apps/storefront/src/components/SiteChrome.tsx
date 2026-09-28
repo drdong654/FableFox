@@ -6,13 +6,12 @@ type SiteHeaderProps = {
 
 export function BrandMark() {
   return (
-    <div className="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 54 54" role="img">
-        <path d="M10 12 23 18l4 15-12-5-5-16Zm34 0-13 6-4 15 12-5 5-16Z" />
-        <path d="m15 28 12 17 12-17-12 5-12-5Z" />
-        <path d="m21 35 6 3 6-3-6 10-6-10Z" />
-      </svg>
-    </div>
+    <img
+    className="brand-mark"
+    src="/images/fable-fox-logo.png"
+    alt="Fable Fox"
+    aria-hidden="true"
+    />
   )
 }
 
@@ -35,7 +34,7 @@ export function SiteHeader({ active }: SiteHeaderProps) {
 
       <nav className={`nav ${menuOpen ? 'nav--open' : ''}`} aria-label="Основная навигация">
         <a className={active === 'catalog' ? 'nav__link--active' : ''} href="/catalog">Каталог</a>
-        <button type="button">Мастерская</button>
+        <a href="/catalog">Мастерская</a>
         <a className={active === 'about' ? 'nav__link--active' : ''} href="/about">О нас</a>
         <button type="button">Доставка</button>
       </nav>
